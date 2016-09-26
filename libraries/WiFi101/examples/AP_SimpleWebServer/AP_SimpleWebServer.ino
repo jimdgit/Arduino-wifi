@@ -46,12 +46,17 @@ void setup() {
     while (true);
   }
 
+  // by default the local IP address of will be 192.168.1.1
+  // you can override it with the following:
+  // WiFi.config(IPAddress(10, 0, 0, 1));
+
   // print the network name (SSID);
   Serial.print("Creating access point named: ");
   Serial.println(ssid);
 
   // Create open network. Change this line if you want to create an WEP network:
-  if (WiFi.beginAP(ssid) != WL_CONNECTED) {
+  status = WiFi.beginAP(ssid);
+  if (status != WL_AP_LISTENING) {
     Serial.println("Creating access point failed");
     // don't continue
     while (true);
@@ -69,6 +74,34 @@ void setup() {
 
 
 void loop() {
+  // compare the previous status to the current status
+  if (status != WiFi.status()) {
+    // it has changed update the variable
+    status = WiFi.status();
+
+    if (status == WL_AP_CONNECTED) {
+      byte remoteMac[6];
+
+      // a device has connected to the AP
+      Serial.print("Device connected to AP, MAC address: ");
+      WiFi.APClientMacAddress(remoteMac);
+      Serial.print(remoteMac[5], HEX);
+      Serial.print(":");
+      Serial.print(remoteMac[4], HEX);
+      Serial.print(":");
+      Serial.print(remoteMac[3], HEX);
+      Serial.print(":");
+      Serial.print(remoteMac[2], HEX);
+      Serial.print(":");
+      Serial.print(remoteMac[1], HEX);
+      Serial.print(":");
+      Serial.println(remoteMac[0], HEX);
+    } else {
+      // a device has disconnected from the AP, and we are back in listening mode
+      Serial.println("Device disconnected from AP");
+    }
+  }
+  
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {                             // if you get a client,
@@ -139,4 +172,5 @@ void printWifiStatus() {
   // print where to go in a browser:
   Serial.print("To see this page in action, open a browser to http://");
   Serial.println(ip);
+
 }

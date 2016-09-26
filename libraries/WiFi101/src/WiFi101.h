@@ -41,7 +41,10 @@ typedef enum {
 	WL_CONNECTED,
 	WL_CONNECT_FAILED,
 	WL_CONNECTION_LOST,
-	WL_DISCONNECTED
+	WL_DISCONNECTED,
+	WL_AP_LISTENING,
+	WL_AP_CONNECTED,
+	WL_AP_FAILED
 } wl_status_t;
 
 /* Encryption modes */
@@ -61,6 +64,13 @@ typedef enum {
 	WL_AP_MODE
 } wl_mode_t;
 
+typedef enum {
+	WL_PING_DEST_UNREACHABLE = -1,
+	WL_PING_TIMEOUT = -2,
+	WL_PING_UNKNOWN_HOST = -3,
+	WL_PING_ERROR = -4
+} wl_ping_result_t;
+
 class WiFiClass
 {
 public:
@@ -69,7 +79,7 @@ public:
 	uint32_t _gateway;
 	int _dhcp;
 	uint32_t _resolve;
-	byte *_bssid;
+	byte *_remoteMacAddress;
 	wl_mode_t _mode;
 	wl_status_t _status;
 	char _scan_ssid[M2M_MAX_SSID_LEN];
@@ -78,6 +88,8 @@ public:
 	WiFiClient *_client[TCP_SOCK_MAX];
 
 	WiFiClass();
+
+	void setPins(int8_t cs, int8_t irq, int8_t rst, int8_t en = -1);
 
 	int init();
 	
@@ -102,8 +114,8 @@ public:
 	 * param ssid: Pointer to the SSID string.
 	 * param channel: Wifi channel to use. Valid values are 1-12.
 	 */
-	uint8_t beginAP(char *ssid);
-	uint8_t beginAP(char *ssid, uint8_t channel);
+	uint8_t beginAP(const char *ssid);
+	uint8_t beginAP(const char *ssid, uint8_t channel);
 	uint8_t beginAP(const char *ssid, uint8_t key_idx, const char* key);
 	uint8_t beginAP(const char *ssid, uint8_t key_idx, const char* key, uint8_t channel);
 
@@ -118,6 +130,7 @@ public:
 	void config(IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet);
 
 	void disconnect();
+	void end();
 
 	uint8_t *macAddress(uint8_t *mac);
 
@@ -128,6 +141,7 @@ public:
 	int32_t RSSI();
 	uint8_t encryptionType();
 	uint8_t* BSSID(uint8_t* bssid);
+	uint8_t* APClientMacAddress(uint8_t* mac);
 	int8_t scanNetworks();
 	char* SSID(uint8_t pos);
 	int32_t RSSI(uint8_t pos);
@@ -138,13 +152,25 @@ public:
 	int hostByName(const char* hostname, IPAddress& result);
 	int hostByName(const String &hostname, IPAddress& result) { return hostByName(hostname.c_str(), result); }
 
+	int ping(const char* hostname, uint8_t ttl = 128);
+	int ping(const String &hostname, uint8_t ttl = 128);
+	int ping(IPAddress host, uint8_t ttl = 128);
+
+	unsigned long getTime();
+
 	void refresh(void);
+
+	void lowPowerMode(void);
+	void maxLowPowerMode(void);
+	void noLowPowerMode(void);
 
 private:
 	int _init;
 	char _version[9];
+
 	uint8_t startConnect(const char *ssid, uint8_t u8SecType, const void *pvAuthInfo);
 	uint8_t startAP(const char *ssid, uint8_t u8SecType, const void *pvAuthInfo, uint8_t channel);
+	uint8_t* remoteMacAddress(uint8_t* remoteMacAddress);
 };
 
 extern WiFiClass WiFi;
